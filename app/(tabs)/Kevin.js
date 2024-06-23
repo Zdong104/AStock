@@ -6,7 +6,7 @@ import axios from 'axios';
 import * as PortfolioAllocation from 'portfolio-allocation';
 import Icon from 'react-native-vector-icons/Ionicons';
 
-const stocks = ['aapl', 'amd', 'amzn', 'f', 'goog', 'gs', 'intc', 'ko', 'meta', 'msft', 'nflx', 'nvda', 'tsla', 'v'];
+const stocks = ['sh600036', 'sz000001', 'sz300716', 'sz002593', 'sh600889', 'sh600567', 'sz000628', 'sz002131', 'sh603005', 'sz002199', 'sh603586', 'sz000010', 'sz002594'];
 
 const App = () => {
   const [selectedStocks, setSelectedStocks] = useState([]);
@@ -44,40 +44,72 @@ const App = () => {
     console.log('\n\nSelected Stocks: ', basket)
     try {
       const stockData = await fetchStockData(basket, startDate, endDate);
-      console.log('\n\nStockData:', stockData)
+      console.log('\n\nStockData or All Data:', stockData)
+
       const modelResults = runModel(stockData);
       setResults(modelResults);
-    } catch (error) {
+    } 
+    catch (error) {
       console.error('Error fetching data or running model:', error);
     }
   };
 
-  const fetchStockData = async (tickers, start, end) => {
+
+  const fetchStockData = async (tickers, start, end, scale = 240) => {
     const formatDate = (date) => {
       return date.toISOString().split('T')[0];
     };
-
+  
     const fetchTickerData = async (ticker) => {
-      const url = `https://query1.finance.yahoo.com/v7/finance/download/${ticker}?period1=${Math.floor(new Date(startDate).getTime() / 1000)}&period2=${Math.floor(new Date(endDate).getTime() / 1000)}&interval=1d&events=history`;
-      const response = await axios.get(url);
-      console.log('\n Catched data from Server\n:', response, '\n\n')
-      const rows = response.data.split('\n').slice(1);
-      const formattedRows = rows.map(row => {
-        const [date, , , , , adj_close,] = row.split(',');
-        return { date, tic: ticker, adj_close: parseFloat(adj_close) };
+      const startDate = formatDate(start);
+      const endDate = formatDate(end);
+      const startTime = new Date(startDate).getTime();
+      const endTime = new Date(endDate).getTime();
+      const DataLen = Math.ceil((endTime - startTime) / (1000 * 60 * 60 * 24)); // 计算天数差
+  
+      console.log(`Start Date: ${startDate}`);
+      console.log(`End Date: ${endDate}`);
+      console.log(`DataLen: ${DataLen}`);
+  
+      const timestamp = new Date().getTime();
+      const url = `https://quotes.sina.cn/cn/api/jsonp_v2.php/var%20_${ticker}_${scale}_${timestamp}=/CN_MarketDataService.getKLineData?symbol=${ticker}&scale=${scale}&ma=no&datalen=${DataLen}`;
+  
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch data for ticker ${ticker}`);
+      }
+  
+      const blob = await response.blob();
+  
+      // Use FileReader to read the Blob content as text
+      const reader = new FileReader();
+      const textPromise = new Promise((resolve, reject) => {
+        reader.onloadend = () => resolve(reader.result);
+        reader.onerror = reject;
       });
-      console.log('\nFetched Data for', ticker, ':', formattedRows, '\n\n'); // Log the fetched data
-      return formattedRows;
+      reader.readAsText(blob, 'GBK'); // Specify the encoding
+  
+      const text = await textPromise;
+      const jsonpData = text.match(/\((.*)\)/)[1]; // 提取JSONP数据
+      const data = JSON.parse(jsonpData);
+  
+      // 提取 close 值并格式化数据
+      const formattedData = data.map(item => ({
+        date: item.day,
+        tic: ticker,
+        close: parseFloat(item.close)
+      }));
+      console.log('formattedData',formattedData)
+  
+      return formattedData;
     };
-
-    const promises = tickers.map(ticker => fetchTickerData(ticker));
-    const results = await Promise.all(promises);
-    return results.flat();
+  
+    const allData = await Promise.all(tickers.map(ticker => fetchTickerData(ticker)));
+    return allData.flat();
   };
 
   const runModel = (data) => {
     const processDfForMvo = (df) => {
-      const stockDimension = df.length / selectedStocks.length;
       df.sort((a, b) => (a.date > b.date ? 1 : -1));
 
       let tic = [...new Set(df.map((item) => item.tic))];
@@ -88,7 +120,7 @@ const App = () => {
       });
 
       for (let i = 0; i < df.length; i++) {
-        mvo[df[i].tic].push(df[i].adj_close);
+        mvo[df[i].tic].push(df[i].close);
       }
 
       let dates = [...new Set(df.map((item) => item.date))];
@@ -96,12 +128,13 @@ const App = () => {
         let row = { date: date };
         tic.forEach((t) => {
           let index = df.findIndex((item) => item.date === date && item.tic === t);
-          row[t] = index !== -1 ? df[index].adj_close : 0;
+          row[t] = index !== -1 ? df[index].close : 0;
         });
         return row;
       });
       return result;
     };
+    
 
     const stockReturnsComputing = (stockPrices) => {
       const rows = stockPrices.length;
@@ -191,7 +224,7 @@ const App = () => {
     };
 
     const stockData = processDfForMvo(data);
-    console.log('First Step Process', stockData, '\n\n\n\n\n\n\n')
+    console.log('\n\n\nRun model: First Step Process', stockData)
     const arStockPrices = stockData.map((row) => Object.values(row).slice(1)); // Exclude date column
     console.log('\n\n arStockPrices:', arStockPrices)
     const [rows, cols] = [arStockPrices.length, arStockPrices[0].length];
@@ -247,7 +280,7 @@ const App = () => {
           />
           
           {filteredStocks.reduce((rows, stock, index) => {
-            if (index % 5 === 0) rows.push([]);
+            if (index % 3 === 0) rows.push([]);
             rows[rows.length - 1].push(stock);
             return rows;
           }, []).map((row, rowIndex) => (

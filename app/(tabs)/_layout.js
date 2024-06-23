@@ -15,9 +15,9 @@ export default function TabLayout() {
         headerShown: false,
       }}>
       <Tabs.Screen
-        name="Home" // File name, need to update in tsconfig as well.
+        name="Kevin" // File name, need to update in tsconfig as well.
         options={{
-          title: 'Home', // Display name
+          title: '总裁专用', // Display name
           tabBarIcon: ({ color, focused }) => (
             <TabBarIcon name={focused ? 'home' : 'home-outline'} color={color} /> // Icon name
           ),
