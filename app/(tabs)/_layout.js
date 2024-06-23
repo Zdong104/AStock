@@ -17,18 +17,18 @@ export default function TabLayout() {
       <Tabs.Screen
         name="Home" // File name, need to update in tsconfig as well.
         options={{
-          title: 'home', // Display name
+          title: 'Home', // Display name
           tabBarIcon: ({ color, focused }) => (
             <TabBarIcon name={focused ? 'home' : 'home-outline'} color={color} /> // Icon name
           ),
         }}
       />
       <Tabs.Screen
-        name="explore"
+        name="Questions"
         options={{
-          title: 'Explore',
+          title: 'Questions',
           tabBarIcon: ({ color, focused }) => (
-            <TabBarIcon name={focused ? 'code-slash' : 'code-slash-outline'} color={color} />
+            <TabBarIcon name={focused ? 'help-circle' : 'help-circle-outline'} color={color} />
           ),
         }}
       />
