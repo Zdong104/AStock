@@ -1,4 +1,6 @@
-# Welcome to your Expo app 👋
+# 总裁特供
+## 专门为总裁设计的基金分析软件
+ENjoy, 我的总裁
 
 This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
 
