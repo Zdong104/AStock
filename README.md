@@ -2,9 +2,13 @@
 ## 专门为总裁设计的基金分析软件
 ENjoy, 我的总裁
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
 
-## Get started
+## 安装
+
+0. 下载文件
+   ```bash
+   git clone https://github.com/Zdong104/AStock.git
+   ```
 
 1. Install dependencies
 
